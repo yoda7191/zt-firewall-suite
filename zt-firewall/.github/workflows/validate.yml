@@ -1,0 +1,29 @@
+name: Validate Firewall Rules & Lint Scripts
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y nftables jq shellcheck
+
+      - name: Validate nftables Rules
+        run: |
+          nft -c -f rules/zerotier-swarm.nft
+          nft -c -f rules/devmode.nft
+          nft -c -f rules/strict.nft
+
+      - name: Lint Shell Scripts
+        run: |
+          shellcheck bin/fwctl
+          shellcheck install-firewall.sh

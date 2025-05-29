@@ -1,0 +1,56 @@
+name: Build Installer Packages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build-packages:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        arch: [x86_64, aarch64]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Set Arch Env
+        id: arch
+        run: |
+          if [[ "${{ matrix.arch }}" == "aarch64" ]]; then
+            echo "ARCH=aarch64" >> $GITHUB_ENV
+          else
+            echo "ARCH=x86_64" >> $GITHUB_ENV
+          fi
+
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Tools on Ubuntu
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt update
+          sudo apt install -y fpm ruby-dev jq
+
+      - name: Create Installer Tarball
+        run: |
+          mkdir -p dist
+          cp -r bin/ lib/ rules/ services/ install-firewall.sh dist/
+          tar -czvf zt-firewall-${{ matrix.os }}-${{ env.ARCH }}.tar.gz dist/
+
+      - name: Build Debian Package (Ubuntu)
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          mkdir -p /tmp/zt-firewall
+          cp -r dist/* /tmp/zt-firewall/
+          fpm -s dir -t deb -n zt-firewall -v 1.0.0 \
+            --architecture ${{ env.ARCH }} \
+            -C /tmp/zt-firewall \
+            -p dist/ .
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: zt-firewall-${{ matrix.os }}-${{ env.ARCH }}
+          path: dist/

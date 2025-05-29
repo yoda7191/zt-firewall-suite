@@ -1,0 +1,48 @@
+flush ruleset
+
+table ip filter {
+    chain input {
+        type filter hook input priority 0; policy drop;
+
+        iif "lo" accept
+        ct state {established, related} accept
+
+        icmp type echo-request accept
+
+        tcp dport 22 accept
+
+        ip saddr 10.10.10.0/24 tcp dport 2377 accept
+        ip saddr 10.10.10.0/24 tcp dport 7946 accept
+        ip saddr 10.10.10.0/24 udp dport 7946 accept
+        ip saddr 10.10.10.0/24 udp dport 4789 accept
+
+        log prefix "nft-drop: " limit rate 5/second
+        drop
+    }
+
+    chain forward {
+        type filter hook forward priority 0; policy drop;
+    }
+
+    chain output {
+        type filter hook output priority 0; policy accept;
+    }
+}
+
+zt_if = "utun3"
+zero_net = "10.10.10.0/24"
+
+set block-policy return
+set skip on lo0
+
+block all
+
+pass quick on $zt_if proto tcp from <zerotier> to any port 2377
+pass quick on $zt_if proto tcp from <zerotier> to any port 7946
+pass quick on $zt_if proto udp from <zerotier> to any port 7946
+pass quick on $zt_if proto udp from <zerotier> to any port 4789
+
+pass quick on $zt_if proto icmp all icmp-type 8 code 0
+pass quick on lo0 all
+
+block drop in log (all)
