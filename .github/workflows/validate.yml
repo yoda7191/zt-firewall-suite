@@ -1,0 +1,30 @@
+name: Validate Rules & Lint Scripts
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y nftables jq shellcheck
+
+      - name: Validate nftables Rules
+        run: |
+          nft -c -f modules/firewall/rules/zerotier-swarm.nft
+          nft -c -f modules/firewall/rules/devmode.nft
+          nft -c -f modules/firewall/rules/strict.nft
+
+      - name: Lint Shell Scripts
+        run: |
+          shellcheck modules/firewall/bin/fwctl
+          shellcheck modules/vnc/vncserver.sh
+          shellcheck modules/docker-swarm/swarm-init.sh

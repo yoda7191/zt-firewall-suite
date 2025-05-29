@@ -1,0 +1,93 @@
+test-suite.sh
+#!/bin/bash
+
+PASSED=0
+FAILED=0
+
+run_test() {
+    echo "🧪 $1"
+    eval "$2"
+    if [ $? -eq 0 ]; then
+        echo "✅ Passed"
+        ((PASSED++))
+    else
+        echo "❌ Failed"
+        ((FAILED++))
+    fi
+}
+
+# Test 1: Validate nftables rule
+run_test "Validate zerotier-swarm.nft" "nft -c -f modules/firewall/rules/zerotier-swarm.nft"
+
+# Test 2: Validate pf rule
+if [ -f modules/firewall/rules/zerotier-swarm.pf ]; then
+    run_test "Validate zerotier-swarm.pf" "sudo pfctl -n -f modules/firewall/rules/zerotier-swarm.pf"
+fi
+
+# Test 3: Check if fwctl exists
+run_test "Check fwctl is executable" "[ -x modules/firewall/bin/fwctl ]"
+
+# Test 4: Check suitectl commands
+run_test "suitectl list-rules" "sudo modules/cli/suitectl firewall list-rules"
+
+# Test 5: VNC server script exists
+run_test "Check VNC script" "[ -x modules/vnc/vncserver.sh ]"
+
+# Test 6: Docker Swarm init script works
+if command -v docker > /dev/null; then
+    run_test "Docker Swarm Init" "sudo modules/docker-swarm/swarm-init.sh"
+else
+    echo "⚠️ Docker not found — skipping Docker tests"
+fi
+
+# Test 7: Git repo has README
+run_test "README exists" "[ -f README.md ]"
+
+# Final Report
+echo ""
+echo "✅ $PASSED tests passed"
+echo "❌ $FAILED tests failed"
+
+##################################################
+
+dashboard.js
+const owner = 'yourusername';
+const repo = 'zt-firewall-suite';
+const token = localStorage.getItem('github_token') || prompt("Enter your GitHub token:");
+
+function sendCommand(eventType) {
+    fetch(`https://api.github.com/repos/ ${owner}/${repo}/dispatches`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            event_type: eventType,
+            client_payload: {}
+        })
+    }).then(res => {
+        document.getElementById('log').innerText += `[+] Sent command: ${eventType}\n`;
+    });
+}
+
+#####################
+
+index.html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>zt-firewall-suite Dashboard</title>
+    <script src="dashboard.js"></script>
+</head>
+<body>
+    <h1>zt-firewall-suite Dashboard</h1>
+    <button onclick="sendCommand('firewall-update')">Apply Firewall Rule</button>
+    <button onclick="sendCommand('swarm-restart')">Restart Docker Swarm</button>
+    <button onclick="sendCommand('vnc-start')">Start VNC Server</button>
+
+    <pre id="log"></pre>
+</body>
+</html>

@@ -1,0 +1,28 @@
+name: Webhook Trigger Handler
+
+on:
+  repository_dispatch:
+    types: [firewall-update, swarm-restart, vnc-start]
+
+jobs:
+  handle-webhook:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Run Command Based on Event
+        run: |
+          echo "Received event type: ${{ github.event.action }}"
+          case "${{ github.event.action }}" in
+            "firewall-update")
+              sudo fwctl set-rule zerotier-swarm
+              ;;
+            "swarm-restart")
+              docker swarm leave --force || true
+              docker swarm init
+              ;;
+            "vnc-start")
+              bash modules/vnc/vncserver.sh
+              ;;
+          esac
