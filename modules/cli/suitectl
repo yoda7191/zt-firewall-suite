@@ -1,32 +1,22 @@
-#!/bin/bash
-
-usage() {
-    echo "Usage: suitectl <command>"
-    echo "Commands:"
-    echo "  firewall <rule>   Apply a firewall rule"
-    echo "  swarm             Initialize Docker Swarm"
-    echo "  vnc               Start VNC server"
-    echo "  update            Update suite"
-}
-
-case "$1" in
-    firewall)
-        sudo modules/firewall/bin/fwctl set-rule ${2:-zerotier-swarm}
-        ;;
-
     swarm)
-        sudo modules/docker-swarm/swarm-init.sh
-        ;;
+        if [ -z "$2" ]; then
+            echo "[ERROR] Missing subcommand: init/join"
+            exit 1
+        fi
 
-    vnc)
-        sudo modules/vnc/vncserver.sh
+        case "$2" in
+            init)
+                sudo modules/docker-swarm/swarm-init.sh init
+                ;;
+            join)
+                if [ -z "$3" ]; then
+                    echo "[ERROR] Missing manager node IP"
+                    exit 1
+                fi
+                sudo modules/docker-swarm/swarm-init.sh join "$3"
+                ;;
+            *)
+                echo "[ERROR] Unknown swarm command: $2"
+                ;;
+        esac
         ;;
-
-    update)
-        git -C /opt/zt-firewall-suite pull origin main
-        ;;
-
-    *)
-        usage
-        ;;
-esac

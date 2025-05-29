@@ -1,0 +1,39 @@
+name: Sync to Homebrew Tap
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  sync-tap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Main Repo
+        uses: actions/checkout@v3
+
+      - name: Clone Homebrew Tap
+        run: |
+          git clone https://github.com/yourusername/homebrew-zt-firewall.git 
+
+      - name: Update Formula URLs
+        run: |
+          cd homebrew-zt-firewall
+          VERSION=$(git describe --tags)
+          SHA256_LINUX=$(shasum -a 256 ../dist/zt-firewall-suite-ubuntu-latest-x86_64.tar.gz | awk '{print $1}')
+          SHA256_MACOS=$(shasum -a 256 ../dist/zt-firewall-suite-macos-latest-aarch64.tar.gz | awk '{print $1}')
+
+          # Replace download URL and SHA256 hash in formulas
+          sed -i "s|url.*|url \"https://github.com/yourusername/zt-firewall-suite/releases/download/ ${VERSION}/zt-firewall-suite-macos-aarch64.tar.gz\"|" Formula/fwctl.rb
+          sed -i "s|sha256.*|sha256 \"$SHA256_MACOS\"|" Formula/fwctl.rb
+
+          sed -i "s|url.*|url \"https://github.com/yourusername/zt-firewall-suite/releases/download/ ${VERSION}/zt-firewall-suite-ubuntu-latest-x86_64.tar.gz\"|" Formula/fwctl-linux.rb
+          sed -i "s|sha256.*|sha256 \"$SHA256_LINUX\"|" Formula/fwctl-linux.rb
+
+      - name: Commit & Push Tap Changes
+        run: |
+          cd homebrew-zt-firewall
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add .
+          git commit -m "Update fwctl formula to $VERSION"
+          git push

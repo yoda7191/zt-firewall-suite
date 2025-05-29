@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>zt-firewall-suite Dashboard</title>
+    <script src="dashboard.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 2rem;
+            background: #1e1e1e;
+            color: white;
+        }
+        button {
+            padding: 1rem;
+            margin: 1rem;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        pre {
+            background: #111;
+            padding: 1rem;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>zt-firewall-suite Dashboard</h1>
+
+    <button onclick="sendCommand('firewall-update')">Apply Firewall Rule</button>
+    <button onclick="sendCommand('swarm-restart')">Restart Docker Swarm</button>
+    <button onclick="sendCommand('vnc-start')">Start VNC Server</button>
+
+    <pre id="log">[+] Waiting for action...</pre>
+</body>
+</html>

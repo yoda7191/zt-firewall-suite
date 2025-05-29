@@ -1,3 +1,4 @@
 .env
 git-token
 git-token.pub
+test.py
