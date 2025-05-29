@@ -1,0 +1,17 @@
+zt_if = "utun3"
+zero_net = "10.10.10.0/24"
+
+set block-policy return
+set skip on lo0
+
+block all
+
+pass quick on $zt_if proto tcp from <zerotier> to any port 2377
+pass quick on $zt_if proto tcp from <zerotier> to any port 7946
+pass quick on $zt_if proto udp from <zerotier> to any port 7946
+pass quick on $zt_if proto udp from <zerotier> to any port 4789
+
+pass quick on $zt_if proto icmp all icmp-type 8 code 0
+pass quick on lo0 all
+
+block drop in log (all)
